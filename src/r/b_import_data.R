@@ -37,7 +37,8 @@ if(!file.exists(file.path(proc_dir_mtbs, 'mtbs.gpkg'))) {
            discovery_doy = yday(discovery_date)) %>%
     st_intersection(., st_union(states)) %>%
     rename_all(tolower) %>%
-    dplyr::select(fire_id, fire_name, discovery_date, discovery_year, discovery_day, discovery_month, discovery_doy, acres)
+    dplyr::select(fire_id, fire_name, discovery_date, discovery_year, 
+                  discovery_day, discovery_month, discovery_doy, acres)
   st_write(mtbs, file.path(proc_dir_mtbs, 'mtbs.gpkg'))
   } else {
     mtbs <- st_read(file.path(proc_dir_mtbs, 'mtbs.gpkg'))
@@ -54,4 +55,15 @@ if(!file.exists(file.path(proc_dir_mtbs, 'megafires.gpkg'))) {
 
   } else {
     megafires <- st_read(file.path(proc_dir_mtbs, 'megafires.gpkg'))
-    }
+  }
+
+# Now let's download the MODIS burned area data from my dropbox
+
+if(length(proc_dir_modis) != ) {
+  
+  for(i in unique(megafires$fire_id)) {
+    fire_event <- megafires %>%
+      filter(fire_id == i)
+  }
+  
+}
