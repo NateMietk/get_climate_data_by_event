@@ -25,6 +25,7 @@ raw_dir_mtbs <- file.path(raw_dir, "mtbs")
 
 # create processed directories
 proc_dir_mtbs <- file.path(processed_dir, 'mtbs')
+proc_dir_modis <- file.path(processed_dir, 'modis')
 
 # create direcotires to hold climate extraction outputs
 extraction_climate_dir <- file.path(extraction_dir, "climate_extractions")
@@ -37,6 +38,6 @@ s3_proc_climate <- 's3://earthlab-natem/get_climate_data_megafires/fire/'
 
 # Check if directory exists for all variable aggregate outputs, if not then create
 var_dir <- list(data_dir, raw_dir, extraction_dir, processed_dir, raw_dir_us, raw_dir_mtbs,
-                proc_dir_mtbs, extraction_climate_dir)
+                proc_dir_mtbs, proc_dir_modis, extraction_climate_dir)
 
 lapply(var_dir, function(x) if(!dir.exists(x)) dir.create(x, showWarnings = FALSE))
