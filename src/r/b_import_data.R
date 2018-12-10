@@ -19,16 +19,16 @@ if (!exists("states")){
 # Import and clean the MTBS polygons
 if(!file.exists(file.path(proc_dir_mtbs, 'mtbs.gpkg'))) {
   
-  mtbs_shp <- file.path(mtbs_prefix, 'mtbs_perims_DD.shp')
+  mtbs_shp <- file.path(raw_dir_mtbs, 'mtbs_perims_DD.shp')
   if (!file.exists(mtbs_shp)) {
-    dest <- paste0(mtbs_prefix, ".zip")
+    dest <- paste0(raw_dir_mtbs, ".zip")
     download.file("https://edcintl.cr.usgs.gov/downloads/sciweb1/shared/MTBS_Fire/data/composite_data/burned_area_extent_shapefile/mtbs_perimeter_data.zip", dest)
-    unzip(dest, exdir = mtbs_prefix)
+    unzip(dest, exdir = raw_dir_mtbs)
     unlink(dest)
     assert_that(file.exists(mtbs_shp))
   }
   
-  mtbs <- st_read(dsn = mtbs_prefix, layer = 'mtbs_perims_DD', quiet= TRUE) %>%
+  mtbs <- st_read(dsn = raw_dir_mtbs, layer = 'mtbs_perims_DD', quiet= TRUE) %>%
     st_transform(p4string_ea) %>%
     mutate(discovery_date = ymd(paste(Year, StartMonth, StartDay, sep="-")),
            discovery_year = year(discovery_date),
@@ -44,7 +44,7 @@ if(!file.exists(file.path(proc_dir_mtbs, 'mtbs.gpkg'))) {
     mtbs <- st_read(file.path(proc_dir_mtbs, 'mtbs.gpkg'))
     }
 
-# Create the Megafire extract from the MTBS database
+  # Create the Megafire extract from the MTBS database
 if(!file.exists(file.path(proc_dir_mtbs, 'megafires.gpkg'))) {
   megafires <- read_csv(file.path(proc_dir_mtbs, 'mefi_MTBS_ids.csv')) %>%
     mutate(fire_id = MTBS_id) %>%
@@ -56,14 +56,3 @@ if(!file.exists(file.path(proc_dir_mtbs, 'megafires.gpkg'))) {
   } else {
     megafires <- st_read(file.path(proc_dir_mtbs, 'megafires.gpkg'))
   }
-
-# Now let's download the MODIS burned area data from my dropbox
-
-if(length(proc_dir_modis) != ) {
-  
-  for(i in unique(megafires$fire_id)) {
-    fire_event <- megafires %>%
-      filter(fire_id == i)
-  }
-  
-}
