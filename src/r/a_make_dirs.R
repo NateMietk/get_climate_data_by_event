@@ -1,6 +1,14 @@
 # load all ibraries
-x <- c("raster", "ncdf4", "tidyverse", "sf", "lubridate", 'velox', 'assertthat')
-lapply(x, library, character.only = TRUE, verbose = FALSE)
+packages <- c("raster", "ncdf4", "tidyverse", "sf", "lubridate", 'velox', 'assertthat')
+if (length(setdiff(packages, rownames(installed.packages()))) > 0) {
+  # automatically installs packages if not found
+  install.packages(setdiff(packages, rownames(installed.packages())))  
+  # loads the library once installed
+  lapply(packages, library, character.only = TRUE, quietly = TRUE) 
+} else {
+  # if package is already install this loads it
+  lapply(packages, library, character.only = TRUE, quietly = TRUE) 
+}
 
 # load all functions
 file_sources <- list.files(file.path('src', 'functions'), pattern="*.R", 
