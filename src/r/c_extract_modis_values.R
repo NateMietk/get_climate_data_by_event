@@ -2,7 +2,7 @@
 fire_event_extracted <- NULL
 
 if(!file.exists(file.path(extraction_dir, 'megafires_modis_extract.gpkg'))) {
-
+  
   for(i in unique(megafires$fire_id)) {
     
     fire_event <- megafires %>%
@@ -30,6 +30,8 @@ if(!file.exists(file.path(extraction_dir, 'megafires_modis_extract.gpkg'))) {
     mutate(first_burndate = case_when(discovery_doy <= first_burndate ~ discovery_doy,
                                       first_burndate <= discovery_doy ~ first_burndate))
   st_write(fire_event_extract, file.path(extraction_dir, 'megafires_modis_extract.gpkg'))
-  } else {
-    fire_event_extract <- st_read(file.path(extraction_dir, 'megafires_modis_extract.gpkg'))
-  }
+  system(paste0('aws s3 sync ', extraction_dir, ' ', s3_proc_extractions))
+  
+} else {
+  fire_event_extract <- st_read(file.path(extraction_dir, 'megafires_modis_extract.gpkg'))
+}

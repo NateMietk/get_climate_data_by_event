@@ -40,11 +40,11 @@ if(!file.exists(file.path(proc_dir_mtbs, 'mtbs.gpkg'))) {
     dplyr::select(fire_id, fire_name, discovery_date, discovery_year, 
                   discovery_day, discovery_month, discovery_doy, acres)
   st_write(mtbs, file.path(proc_dir_mtbs, 'mtbs.gpkg'))
-  } else {
-    mtbs <- st_read(file.path(proc_dir_mtbs, 'mtbs.gpkg'))
-    }
+} else {
+  mtbs <- st_read(file.path(proc_dir_mtbs, 'mtbs.gpkg'))
+}
 
-  # Create the Megafire extract from the MTBS database
+# Create the Megafire extract from the MTBS database
 if(!file.exists(file.path(proc_dir_mtbs, 'megafires.gpkg'))) {
   megafires <- read_csv(file.path(proc_dir_mtbs, 'mefi_MTBS_ids.csv')) %>%
     mutate(fire_id = MTBS_id) %>%
@@ -52,7 +52,8 @@ if(!file.exists(file.path(proc_dir_mtbs, 'megafires.gpkg'))) {
     left_join(., mtbs, by = 'fire_id') %>%
     st_sf(.)
   st_write(megafires, file.path(proc_dir_mtbs, 'megafires.gpkg'))
-
-  } else {
-    megafires <- st_read(file.path(proc_dir_mtbs, 'megafires.gpkg'))
-  }
+  system(paste0('aws s3 sync ', processed_dir, ' ', s3_proc_prefix))
+  
+} else {
+  megafires <- st_read(file.path(proc_dir_mtbs, 'megafires.gpkg'))
+}
