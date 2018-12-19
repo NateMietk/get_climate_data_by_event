@@ -92,7 +92,7 @@ if(!file.exists(file.path(extraction_dir, 'climate_megafires.csv'))) {
         colnames(climate_extract) <- c(paste0('x', seq(first_burn_date, last_burn_date)))
         
         col_name <- paste0('doy_', j)
-        if(j == 'rmin' & j == 'tmmn' & j == 'vpd' & j == 'pet' & j == 'fm100' & j == 'fm1000') {
+        if(j == 'pr' & j == 'rmin' & j == 'tmmn' & j == 'vpd' & j == 'pet' & j == 'fm100' & j == 'fm1000') {
           climate_extracted[[j]] <- as.data.frame(climate_extract) %>%
             mutate(fire_id = as.data.frame(modis_pts)$fire_id) %>%
             as_tibble() %>% 
@@ -119,14 +119,14 @@ if(!file.exists(file.path(extraction_dir, 'climate_megafires.csv'))) {
     }
     climate_per_mtbs_id[[i]] <- bind_cols(climate_extracted)
   }
-  climate_megafires_doy <- bind_rows(climate_per_mtbs_id) %>%
+  climate_megafires <- bind_rows(climate_per_mtbs_id) %>%
     dplyr::select(-fire_id1, -fire_id2, -fire_id3, -fire_id4, -fire_id5, -fire_id6, -fire_id7, 
                   -fire_id8, -fire_id9, -fire_id10, -fire_id11) %>%
     left_join(as.data.frame(climate_megafires_event_statistics), ., by = 'fire_id')
   
-  write_csv(climate_megafires_doy, file.path(extraction_dir, 'climate_megafires.csv'))
+  write_csv(climate_megafires, file.path(extraction_dir, 'climate_megafires.csv'))
   system(paste0('aws s3 sync ', extraction_dir, ' ', s3_proc_extractions, ' --delete'))
   
 } else {
-  climate_megafires_doy <- read_csv(file.path(extraction_dir, 'climate_megafires.csv'))
+  climate_megafires <- read_csv(file.path(extraction_dir, 'climate_megafires.csv'))
 }
