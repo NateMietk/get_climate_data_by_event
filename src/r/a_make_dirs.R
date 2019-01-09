@@ -16,7 +16,8 @@ file_sources <- list.files(file.path('src', 'functions'), pattern="*.R",
 invisible(sapply(file_sources, source, .GlobalEnv))
 
 # key projections
-p4string_ea <- "+proj=laea +lat_0=45 +lon_0=-100 +x_0=0 +y_0=0 +a=6370997 +b=6370997 +units=m +no_defs"   #http://spatialreference.org/ref/sr-org/6903/
+laea <- '+proj=laea +lat_0=45 +lon_0=-100 +x_0=0 +y_0=0 +a=6370997 +b=6370997 +units=m +no_defs'
+ll <- '+proj=longlat +lon_0=0 +a=6378137 +rf=298.257223563'
 
 # define the amount of cores st_par runs on
 ncor <- parallel::detectCores()

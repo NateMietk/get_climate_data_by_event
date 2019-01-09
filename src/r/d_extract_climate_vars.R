@@ -4,16 +4,14 @@ if(!file.exists(file.path(extraction_dir, 'climate_megafires_event_statistics.cs
   climate_per_mtbs_id <- NULL
   
   for(i in unique(fire_event_extract$fire_id)) {
-    
     fire_event <- fire_event_extract %>%
       filter(fire_id == i) %>%
-      st_transform('+proj=longlat +lon_0=0 +a=6378137 +rf=298.257223563')
+      st_transform(laea)
     fire_year <- fire_event$discovery_year
     first_burn_date <- fire_event$first_burndate
     last_burn_date <- fire_event$last_burndate
     
     for(j in climate_vars) {
-      
       climate_files <- list.files(pattern = paste0(j, '_', fire_year, '.nc'), full.names = TRUE)
       
       var <- climate_files[[1]] %>%
@@ -22,11 +20,12 @@ if(!file.exists(file.path(extraction_dir, 'climate_megafires_event_statistics.cs
         unlist()
       var <- var[1]
       
-      # Import the netcdf files and crop to wildfire extent
-      climate_stack <- raster::stack(climate_files) 
-      proj4string(climate_stack) = CRS('+proj=longlat +lon_0=0 +a=6378137 +rf=298.257223563')
-      climate_stack <- climate_stack %>%
-        crop(fire_event)
+      fire_event_buffer <- suppressWarnings(fire_event %>% st_transform(ll) %>%
+                                              st_buffer(0.12500001))
+      
+      climate_stack <- raster::stack(climate_files) %>%
+        crop(fire_event_buffer) 
+      projection(climate_stack) <- ll
       
       # Set the date values and ranges
       start_date <- as.Date(paste(fire_year, "01", "01", sep = "/"))
@@ -37,31 +36,37 @@ if(!file.exists(file.path(extraction_dir, 'climate_megafires_event_statistics.cs
       # Subset the climate data so it falls within the days when the fire burned
       climate_stack = subset(climate_stack,
                              which(getZ(climate_stack) >= as.Date(first_burn_date, origin = start_date) &
-                                     getZ(climate_stack) <= as.Date(last_burn_date, origin = start_date)))
-      if(j == "pr") {
-        climate_mean <- calc(climate_stack, fun = mean, na.rm = TRUE)
-        climate_min <- calc(climate_stack, fun = min)
-        climate_max <- calc(climate_stack, fun = max)
-        climate_sum <- calc(climate_stack, fun = sum)
-        climate_stats <- raster::stack(climate_mean, climate_min, climate_max, climate_sum)
+                                     getZ(climate_stack) <= as.Date(last_burn_date, origin = start_date))) 
+      
+      climate_stack <- climate_stack %>%
+        projectRaster(., crs = laea, res = 4000, method = 'bilinear')
+
+        multiple_stats <- function(x, na.rm) c(mean = mean(x, na.rm=na.rm), min = min(x, na.rm=na.rm), max = max(x, na.rm=na.rm),
+                                           sum = sum(x, na.rm=na.rm), sd = sd(x, na.rm=na.rm))
+
+        mean_var <- paste0('mean_', j)
+        min_var <- paste0('min_', j)
+        max_var <- paste0('max_', j)
+        sum_var <- paste0('sum_', j)
+        sd_var <- paste0('sd_', j)
         
-        climate_extract <- velox(climate_stats)$extract(sp = fire_event, fun = function(x) max(x),
-                                                        small = TRUE) %>% as_tibble() 
+        climate_extract <- raster::extract(climate_stack, as(fire_event, 'Spatial'), 
+                                           fun = multiple_stats, df = TRUE, small = TRUE) %>% 
+          as_tibble() %>%
+          add_rownames(., "stat") %>%
+          dplyr::select(-ID) %>%
+          gather(key = doy, value = !!ensym(j), -stat) %>%
+          mutate(doy = gsub('X', '', doy),
+                 doy = yday(as_date(as.integer(doy), origin = '1900-01-01'))) %>%
+          spread(stat, !!ensym(j)) %>%
+          dplyr::select(-doy) %>%
+          summarize(!!ensym(mean_var) := mean(mean, na.rm = TRUE),
+                    !!ensym(min_var) := min(min, na.rm = TRUE),
+                    !!ensym(max_var) := max(max, na.rm = TRUE),
+                    !!ensym(sum_var) := mean(sum, na.rm = TRUE),
+                    !!ensym(sd_var) := mean(sd, na.rm = TRUE)) %>%
+          mutate(fire_id = fire_event$fire_id)
         
-        # Rename to the raster layer names
-        colnames(climate_extract) <- c(paste0('mean_', var), paste0('min_', var), paste0('max_', var), paste0('sum_', var))
-      } else {
-        climate_mean <- calc(climate_stack, fun = mean, na.rm = TRUE)
-        climate_min <- calc(climate_stack, fun = min)
-        climate_max <- calc(climate_stack, fun = max)
-        climate_stats <- raster::stack(climate_mean, climate_min, climate_max)
-        
-        climate_extract <- velox(climate_stats)$extract(sp = fire_event, fun = function(x) max(x),
-                                                        small = TRUE) %>% as_tibble() 
-        
-        # Rename to the raster layer names
-        colnames(climate_extract) <- c(paste0('mean_', var), paste0('min_', var), paste0('max_', var))
-      }
       climate_extracted[[j]] <- as.data.frame(climate_extract) %>%
         mutate(fire_id = as.data.frame(fire_event)$fire_id) %>%
         as_tibble() 
